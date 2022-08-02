@@ -56,7 +56,7 @@ const DEFAULT_CSS = objectToCssString({
     ['pointer-events']: 'none',
     ["text-align"]: "right",
 });
-const imgUrl = "https://raw.githubusercontent.com/ao-shen/vscode-power-mode/master/images/Character_Diona_Portrait.png";
+const imgUrl = "https://raw.githubusercontent.com/S-Nuttapong/co-panik/master/assets/panik.gif";
 const bgImgCss = objectToCssString({
     width: `60vh`,
     height: `80vh`,
@@ -64,9 +64,10 @@ const bgImgCss = objectToCssString({
     ["background-size"]: 'contain',
     ["background-position"]: 'right',
     ["z-index"]: 9999,
-    ["background-color"]: `transparent`,
+    ["background-color"]: `red`,
     ["background-image"]: `url("${imgUrl}")`,
-    right: `${-posX}vh`,
+    right: `${-10}vh`,
+    top: '-10vh'
 });
 function withEnableCommand() {
     return vscode_1.commands.registerCommand("enable", () => {
