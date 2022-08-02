@@ -30,6 +30,8 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.deactivate = exports.activate = exports.withEnableCommand = void 0;
+// The module 'vscode' contains the VS Code extensibility API
+// Import the module and reference it with the alias vscode in your code below
 const vscode = __importStar(__webpack_require__(1));
 const vscode_1 = __webpack_require__(1);
 const objectToCssString = (settings) => {
@@ -45,9 +47,6 @@ const objectToCssString = (settings) => {
 const DEFAULT_CSS = objectToCssString({
     position: 'absolute',
     right: "5%",
-    top: "20px",
-    ['font-family']: "monospace",
-    ['font-weight']: "900",
     // width: "50px",
     ['z-index']: 1,
     ['pointer-events']: 'none',
@@ -58,8 +57,8 @@ const imgUrl = "https://raw.githubusercontent.com/S-Nuttapong/co-panik/main/asse
 // 	backgroundSize: 
 // 	'
 // }
-const R = 1;
-const H = 20;
+const R = 1 / 2;
+const H = 50;
 const getHeight = (h) => `${h}vh`;
 const getWidth = (h) => `${h * R}vh`;
 const bgImgCss = objectToCssString({
@@ -69,9 +68,10 @@ const bgImgCss = objectToCssString({
     ["background-size"]: 'contain',
     ["background-position"]: 'right',
     ["z-index"]: 9999,
+    //["background-color"]: 'red',
     ["background-image"]: `url("${imgUrl}")`,
     // right: '10vh',
-    // top: '10vh'
+    top: '-10vh'
 });
 function withEnableCommand() {
     return vscode_1.commands.registerCommand("enable", () => {
@@ -83,9 +83,9 @@ function onDidChangeTextDocument(event) {
     console.debug('text changed', { event });
     console.debug(event.contentChanges);
 }
+let hasDec = false;
+let yScrollPos = NaN;
 function activate(context) {
-    console.log({ DEFAULT_CSS, bgImgCss });
-    const editor = vscode.window.activeTextEditor;
     const decoration = vscode.window.createTextEditorDecorationType({
         // Title and Count cannot use the same pseudoelement
         before: {
@@ -95,12 +95,29 @@ function activate(context) {
         },
         rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed,
     });
-    //@ts-ignore
-    const firstVisibleRange = editor?.visibleRanges.sort()[0];
-    const position = firstVisibleRange.start;
-    const ranges = [new vscode.Range(position, position)];
-    editor?.setDecorations(decoration, ranges);
-    vscode.workspace.onDidChangeTextDocument(onDidChangeTextDocument);
+    const updateYScrollPosition = (start) => {
+        yScrollPos = start._line;
+    };
+    const isScrolling = (start) => start._line !== yScrollPos;
+    const initPanik = () => {
+        let editor = vscode.window.activeTextEditor;
+        if (!editor)
+            return;
+        //@ts-ignore
+        const firstVisibleRange = editor.visibleRanges.sort()[0];
+        const { _start } = firstVisibleRange;
+        const position = firstVisibleRange.start;
+        if (isScrolling(_start)) {
+            console.debug('updating panik man');
+            const ranges = [new vscode.Range(position, position)];
+            editor.setDecorations(decoration, ranges);
+            updateYScrollPosition(_start);
+        }
+        return;
+    };
+    initPanik();
+    // vscode.workspace.onDidChangeTextDocument(initPanik)
+    vscode.window.onDidChangeTextEditorVisibleRanges(initPanik);
 }
 exports.activate = activate;
 // this method is called when your extension is deactivated
