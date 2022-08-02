@@ -30,11 +30,8 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.deactivate = exports.activate = exports.withEnableCommand = void 0;
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
 const vscode = __importStar(__webpack_require__(1));
 const vscode_1 = __webpack_require__(1);
-let posX = 0;
 const objectToCssString = (settings) => {
     let value = '';
     const cssString = Object.keys(settings).map(setting => {
@@ -56,18 +53,25 @@ const DEFAULT_CSS = objectToCssString({
     ['pointer-events']: 'none',
     ["text-align"]: "right",
 });
-const imgUrl = "https://raw.githubusercontent.com/S-Nuttapong/co-panik/main/assets/panik.gif";
+const imgUrl = "https://raw.githubusercontent.com/S-Nuttapong/co-panik/main/assets/panik-loop.gif";
+// const a: Style = {
+// 	backgroundSize: 
+// 	'
+// }
+const R = 1;
+const H = 20;
+const getHeight = (h) => `${h}vh`;
+const getWidth = (h) => `${h * R}vh`;
 const bgImgCss = objectToCssString({
-    width: `60vh`,
-    height: `80vh`,
+    width: getWidth(H),
+    height: getHeight(H),
     "background-repeat": 'no-repeat',
     ["background-size"]: 'contain',
     ["background-position"]: 'right',
     ["z-index"]: 9999,
-    ["background-color"]: `red`,
     ["background-image"]: `url("${imgUrl}")`,
-    right: `${-10}vh`,
-    top: '-10vh'
+    // right: '10vh',
+    // top: '10vh'
 });
 function withEnableCommand() {
     return vscode_1.commands.registerCommand("enable", () => {
