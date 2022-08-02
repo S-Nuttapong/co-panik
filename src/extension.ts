@@ -25,8 +25,11 @@ const DEFAULT_CSS = objectToCssString({
 	["text-align"]: "right",
 });
 
-const imgUrl = "https://raw.githubusercontent.com/S-Nuttapong/co-panik/main/assets/panik-loop.gif"
+const panikImg = "https://raw.githubusercontent.com/S-Nuttapong/co-panik/main/assets/panik.gif"
 
+const kalmImg = "https://raw.githubusercontent.com/S-Nuttapong/co-panik/main/assets/kalm.png"
+
+const imgs = [kalmImg, panikImg]
 
 // const a: Style = {
 // 	backgroundSize: 
@@ -42,7 +45,7 @@ const getHeight = (h: number) => `${h}vh`
 const getWidth = (h: number) => `${h * R}vh`
 
 
-const bgImgCss = objectToCssString({
+const bgImgCss = (imgUrl: string) => objectToCssString({
 	width: getWidth(H),
 	height: getHeight(H),
 	"background-repeat": 'no-repeat',
@@ -72,15 +75,38 @@ let hasDec = false
 let yScrollPos: number = NaN
 
 export function activate(context: vscode.ExtensionContext) {
-	const decoration = vscode.window.createTextEditorDecorationType({
-		// Title and Count cannot use the same pseudoelement
-		before: {
-			contentText: "",
-			color: "#fff",
-			textDecoration: `none; ${DEFAULT_CSS} ${bgImgCss}`,
-		},
-		rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed,
-	})
+
+	const initDecorationTypeFN = () => {
+		let img = kalmImg
+		let decoration = vscode.window.createTextEditorDecorationType({
+			// Title and Count cannot use the same pseudoelement
+			before: {
+				contentText: "",
+				color: "#fff",
+				textDecoration: `none; ${DEFAULT_CSS} ${bgImgCss(img)}`,
+			},
+			rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed,
+		})
+
+		return (imgUrl: string) => {
+			if (imgUrl !== img) {
+				img = imgUrl
+				decoration.dispose()
+				decoration = vscode.window.createTextEditorDecorationType({
+					// Title and Count cannot use the same pseudoelement
+					before: {
+						contentText: "",
+						color: "#fff",
+						textDecoration: `none; ${DEFAULT_CSS} ${bgImgCss(img)}`,
+					},
+					rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed,
+				})
+			}
+			return decoration
+		}
+	}
+
+	const getDecorationType = initDecorationTypeFN()
 
 	const updateYScrollPosition = (start: any) => {
 		yScrollPos = start._line
@@ -98,14 +124,13 @@ export function activate(context: vscode.ExtensionContext) {
 		const { _start } = firstVisibleRange
 		const position = firstVisibleRange.start;
 
-		if (isScrolling(_start)) {
-			console.debug('updating panik man')
-			const ranges = [new vscode.Range(position, position)];
-			editor.setDecorations(decoration, ranges)
-			updateYScrollPosition(_start)
-		}
+		if (!isScrolling(_start)) return
 
-		return
+		const img = imgs[Math.round(Math.random())]
+		const decoration = getDecorationType(img)
+		const ranges = [new vscode.Range(position, position)];
+		editor.setDecorations(decoration, ranges)
+		updateYScrollPosition(_start)
 	}
 
 	initPanik()

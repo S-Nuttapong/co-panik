@@ -52,7 +52,9 @@ const DEFAULT_CSS = objectToCssString({
     ['pointer-events']: 'none',
     ["text-align"]: "right",
 });
-const imgUrl = "https://raw.githubusercontent.com/S-Nuttapong/co-panik/main/assets/panik-loop.gif";
+const panikImg = "https://raw.githubusercontent.com/S-Nuttapong/co-panik/main/assets/panik.gif";
+const kalmImg = "https://raw.githubusercontent.com/S-Nuttapong/co-panik/main/assets/kalm.png";
+const imgs = [kalmImg, panikImg];
 // const a: Style = {
 // 	backgroundSize: 
 // 	'
@@ -61,7 +63,7 @@ const R = 1 / 2;
 const H = 50;
 const getHeight = (h) => `${h}vh`;
 const getWidth = (h) => `${h * R}vh`;
-const bgImgCss = objectToCssString({
+const bgImgCss = (imgUrl) => objectToCssString({
     width: getWidth(H),
     height: getHeight(H),
     "background-repeat": 'no-repeat',
@@ -86,15 +88,35 @@ function onDidChangeTextDocument(event) {
 let hasDec = false;
 let yScrollPos = NaN;
 function activate(context) {
-    const decoration = vscode.window.createTextEditorDecorationType({
-        // Title and Count cannot use the same pseudoelement
-        before: {
-            contentText: "",
-            color: "#fff",
-            textDecoration: `none; ${DEFAULT_CSS} ${bgImgCss}`,
-        },
-        rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed,
-    });
+    const initDecorationTypeFN = () => {
+        let img = kalmImg;
+        let decoration = vscode.window.createTextEditorDecorationType({
+            // Title and Count cannot use the same pseudoelement
+            before: {
+                contentText: "",
+                color: "#fff",
+                textDecoration: `none; ${DEFAULT_CSS} ${bgImgCss(img)}`,
+            },
+            rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed,
+        });
+        return (imgUrl) => {
+            if (imgUrl !== img) {
+                img = imgUrl;
+                decoration.dispose();
+                decoration = vscode.window.createTextEditorDecorationType({
+                    // Title and Count cannot use the same pseudoelement
+                    before: {
+                        contentText: "",
+                        color: "#fff",
+                        textDecoration: `none; ${DEFAULT_CSS} ${bgImgCss(img)}`,
+                    },
+                    rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed,
+                });
+            }
+            return decoration;
+        };
+    };
+    const getDecorationType = initDecorationTypeFN();
     const updateYScrollPosition = (start) => {
         yScrollPos = start._line;
     };
@@ -107,13 +129,13 @@ function activate(context) {
         const firstVisibleRange = editor.visibleRanges.sort()[0];
         const { _start } = firstVisibleRange;
         const position = firstVisibleRange.start;
-        if (isScrolling(_start)) {
-            console.debug('updating panik man');
-            const ranges = [new vscode.Range(position, position)];
-            editor.setDecorations(decoration, ranges);
-            updateYScrollPosition(_start);
-        }
-        return;
+        if (!isScrolling(_start))
+            return;
+        const img = imgs[Math.round(Math.random())];
+        const decoration = getDecorationType(img);
+        const ranges = [new vscode.Range(position, position)];
+        editor.setDecorations(decoration, ranges);
+        updateYScrollPosition(_start);
     };
     initPanik();
     // vscode.workspace.onDidChangeTextDocument(initPanik)
