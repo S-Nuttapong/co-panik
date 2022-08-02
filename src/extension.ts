@@ -31,7 +31,7 @@ const DEFAULT_CSS = objectToCssString({
 	["text-align"]: "right",
 });
 
-const imgUrl = "https://raw.githubusercontent.com/S-Nuttapong/co-panik/master/assets/panik.gif"
+const imgUrl = "https://raw.githubusercontent.com/S-Nuttapong/co-panik/main/assets/panik.gif"
 
 
 const bgImgCss = objectToCssString({

@@ -56,7 +56,7 @@ const DEFAULT_CSS = objectToCssString({
     ['pointer-events']: 'none',
     ["text-align"]: "right",
 });
-const imgUrl = "https://raw.githubusercontent.com/S-Nuttapong/co-panik/master/assets/panik.gif";
+const imgUrl = "https://raw.githubusercontent.com/S-Nuttapong/co-panik/main/assets/panik.gif";
 const bgImgCss = objectToCssString({
     width: `60vh`,
     height: `80vh`,
