@@ -55,13 +55,13 @@ const bgImgCss = (imgUrl: string) => objectToCssString({
 	//["background-color"]: 'red',
 	["background-image"]: `url("${imgUrl}")`,
 	// right: '10vh',
-	top: '-10vh'
+	top: '-5vh'
 })
 
 
 export function withEnableCommand() {
 	return commands.registerCommand("enable", () => {
-		window.showInformationMessage("panik enable !!")
+		window.showInformationMessage("Co-Panik Enable 😱")
 	})
 }
 
@@ -74,8 +74,42 @@ let hasDec = false
 
 let yScrollPos: number = NaN
 
-export function activate(context: vscode.ExtensionContext) {
+enum Severity {
+	Kalm,
+	Panik,
+	VeryPanik
+}
 
+const SeverityCalculator = (sources = ['ts']) => (diagnostic: vscode.Diagnostic[] = []) => {
+	const isAuditedSrc = ({ source }: vscode.Diagnostic) => !!source && sources.includes(source)
+	return diagnostic.filter(isAuditedSrc).length
+}
+
+const getSeverityScore = SeverityCalculator()
+
+const panikFactorNormalizer = (score: number) => Math.max(score - 3, 0)
+
+const getSeverity = (score: number, normalizer = panikFactorNormalizer): Severity => {
+	const normalizedScore = normalizer(score)
+
+	switch (normalizedScore) {
+		case 0: return Severity.Kalm
+		case 1: return Severity.Panik
+		default: return Severity.VeryPanik
+	}
+}
+
+const ImgUrlBySeverity = {
+	[Severity.Kalm]: kalmImg,
+	[Severity.Panik]: panikImg,
+	[Severity.VeryPanik]: panikImg
+}
+
+const getImgUrlBySeverity = (serverity: Severity) => ImgUrlBySeverity[serverity]
+
+export function activate(context: vscode.ExtensionContext) {
+	context.subscriptions.push(withEnableCommand())
+	
 	const initDecorationTypeFN = () => {
 		let img = kalmImg
 		let decoration = vscode.window.createTextEditorDecorationType({
@@ -89,7 +123,9 @@ export function activate(context: vscode.ExtensionContext) {
 		})
 
 		return (imgUrl: string) => {
-			if (imgUrl !== img) {
+			const isSameImg = imgUrl === img
+
+			if (!isSameImg) {
 				img = imgUrl
 				decoration.dispose()
 				decoration = vscode.window.createTextEditorDecorationType({
@@ -102,7 +138,8 @@ export function activate(context: vscode.ExtensionContext) {
 					rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed,
 				})
 			}
-			return decoration
+
+			return { decoration, isSameImg }
 		}
 	}
 
@@ -110,6 +147,12 @@ export function activate(context: vscode.ExtensionContext) {
 
 	const updateYScrollPosition = (start: any) => {
 		yScrollPos = start._line
+	}
+
+	const getCurrentEditorDiagnostics = () => {
+		const uri = vscode?.window?.activeTextEditor?.document.uri;
+		if (!uri) return []
+		return vscode.languages.getDiagnostics(uri);
 	}
 
 	const isScrolling = (start: any) => start._line !== yScrollPos
@@ -124,18 +167,26 @@ export function activate(context: vscode.ExtensionContext) {
 		const { _start } = firstVisibleRange
 		const position = firstVisibleRange.start;
 
-		if (!isScrolling(_start)) return
-
-		const img = imgs[Math.round(Math.random())]
-		const decoration = getDecorationType(img)
+		const diagnostic = getCurrentEditorDiagnostics()
+		const score = getSeverityScore(diagnostic)
+		const serverity = getSeverity(score)
+		const imgUrl = getImgUrlBySeverity(serverity)
+		const { decoration, isSameImg } = getDecorationType(imgUrl)
 		const ranges = [new vscode.Range(position, position)];
-		editor.setDecorations(decoration, ranges)
-		updateYScrollPosition(_start)
+
+		if (isScrolling(_start)) {
+			editor.setDecorations(decoration, ranges)
+			return updateYScrollPosition(_start)
+		}
+
+		if (isSameImg) return
+
+		return editor.setDecorations(decoration, ranges)
 	}
 
 	initPanik()
 
-	// vscode.workspace.onDidChangeTextDocument(initPanik)
+	vscode.workspace.onDidChangeTextDocument(initPanik)
 
 	vscode.window.onDidChangeTextEditorVisibleRanges(initPanik)
 }

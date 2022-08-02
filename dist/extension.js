@@ -73,11 +73,11 @@ const bgImgCss = (imgUrl) => objectToCssString({
     //["background-color"]: 'red',
     ["background-image"]: `url("${imgUrl}")`,
     // right: '10vh',
-    top: '-10vh'
+    top: '-5vh'
 });
 function withEnableCommand() {
     return vscode_1.commands.registerCommand("enable", () => {
-        vscode_1.window.showInformationMessage("panik enable !!");
+        vscode_1.window.showInformationMessage("Co-Panik Enable 😱");
     });
 }
 exports.withEnableCommand = withEnableCommand;
@@ -87,7 +87,34 @@ function onDidChangeTextDocument(event) {
 }
 let hasDec = false;
 let yScrollPos = NaN;
+var Severity;
+(function (Severity) {
+    Severity[Severity["Kalm"] = 0] = "Kalm";
+    Severity[Severity["Panik"] = 1] = "Panik";
+    Severity[Severity["VeryPanik"] = 2] = "VeryPanik";
+})(Severity || (Severity = {}));
+const SeverityCalculator = (sources = ['ts']) => (diagnostic = []) => {
+    const isAuditedSrc = ({ source }) => !!source && sources.includes(source);
+    return diagnostic.filter(isAuditedSrc).length;
+};
+const getSeverityScore = SeverityCalculator();
+const panikFactorNormalizer = (score) => Math.max(score - 3, 0);
+const getSeverity = (score, normalizer = panikFactorNormalizer) => {
+    const normalizedScore = normalizer(score);
+    switch (normalizedScore) {
+        case 0: return Severity.Kalm;
+        case 1: return Severity.Panik;
+        default: return Severity.VeryPanik;
+    }
+};
+const ImgUrlBySeverity = {
+    [Severity.Kalm]: kalmImg,
+    [Severity.Panik]: panikImg,
+    [Severity.VeryPanik]: panikImg
+};
+const getImgUrlBySeverity = (serverity) => ImgUrlBySeverity[serverity];
 function activate(context) {
+    context.subscriptions.push(withEnableCommand());
     const initDecorationTypeFN = () => {
         let img = kalmImg;
         let decoration = vscode.window.createTextEditorDecorationType({
@@ -100,7 +127,8 @@ function activate(context) {
             rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed,
         });
         return (imgUrl) => {
-            if (imgUrl !== img) {
+            const isSameImg = imgUrl === img;
+            if (!isSameImg) {
                 img = imgUrl;
                 decoration.dispose();
                 decoration = vscode.window.createTextEditorDecorationType({
@@ -113,12 +141,18 @@ function activate(context) {
                     rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed,
                 });
             }
-            return decoration;
+            return { decoration, isSameImg };
         };
     };
     const getDecorationType = initDecorationTypeFN();
     const updateYScrollPosition = (start) => {
         yScrollPos = start._line;
+    };
+    const getCurrentEditorDiagnostics = () => {
+        const uri = vscode?.window?.activeTextEditor?.document.uri;
+        if (!uri)
+            return [];
+        return vscode.languages.getDiagnostics(uri);
     };
     const isScrolling = (start) => start._line !== yScrollPos;
     const initPanik = () => {
@@ -129,16 +163,22 @@ function activate(context) {
         const firstVisibleRange = editor.visibleRanges.sort()[0];
         const { _start } = firstVisibleRange;
         const position = firstVisibleRange.start;
-        if (!isScrolling(_start))
-            return;
-        const img = imgs[Math.round(Math.random())];
-        const decoration = getDecorationType(img);
+        const diagnostic = getCurrentEditorDiagnostics();
+        const score = getSeverityScore(diagnostic);
+        const serverity = getSeverity(score);
+        const imgUrl = getImgUrlBySeverity(serverity);
+        const { decoration, isSameImg } = getDecorationType(imgUrl);
         const ranges = [new vscode.Range(position, position)];
-        editor.setDecorations(decoration, ranges);
-        updateYScrollPosition(_start);
+        if (isScrolling(_start)) {
+            editor.setDecorations(decoration, ranges);
+            return updateYScrollPosition(_start);
+        }
+        if (isSameImg)
+            return;
+        return editor.setDecorations(decoration, ranges);
     };
     initPanik();
-    // vscode.workspace.onDidChangeTextDocument(initPanik)
+    vscode.workspace.onDidChangeTextDocument(initPanik);
     vscode.window.onDidChangeTextEditorVisibleRanges(initPanik);
 }
 exports.activate = activate;
